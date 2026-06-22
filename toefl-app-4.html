@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A1020">
+<title>TOEFL Study Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: #0A1020; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  button { cursor: pointer; font-family: inherit; }
+  input, textarea { font-family: inherit; outline: none; }
+  textarea { resize: vertical; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #0A1020; }
+  ::-webkit-scrollbar-thumb { background: #243347; border-radius: 2px; }
+
+  /* Header */
+  #header { background: #0F1623; border-bottom: 1px solid #1E2D45; position: sticky; top: 0; z-index: 100; }
+  #header-inner { max-width: 800px; margin: 0 auto; padding: 16px 20px 0; }
+  #header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  #app-label { font-size: 11px; color: #4F8EF7; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  #app-title { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.2; }
+  #streak-box { text-align: center; background: #1A2740; border-radius: 12px; padding: 8px 16px; }
+  #streak-num { font-size: 24px; font-weight: 900; color: #F5A623; }
+  #streak-label { font-size: 10px; color: #7B8FAE; font-weight: 600; }
+  #nav { display: flex; overflow-x: auto; scrollbar-width: none; }
+  #nav::-webkit-scrollbar { display: none; }
+  .nav-btn { background: none; border: none; padding: 8px 14px; font-size: 12px; font-weight: 600; color: #5A7090; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  .nav-btn.active { color: #4F8EF7; border-bottom-color: #4F8EF7; }
+
+  /* Main */
+  #main { max-width: 800px; margin: 0 auto; padding: 24px 20px 60px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Cards */
+  .card { background: #1A2740; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+  .sub-label { font-size: 12px; color: #7B8FAE; margin-bottom: 10px; font-weight: 600; }
+
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .stat-box { background: #1A2740; border-radius: 14px; padding: 16px 8px; text-align: center; }
+  .stat-icon { font-size: 20px; }
+  .stat-val { font-size: 18px; font-weight: 900; margin: 2px 0; }
+  .stat-lbl { font-size: 10px; color: #5A7090; }
+
+  /* Progress bar */
+  .progress-row { margin-bottom: 12px; }
+  .progress-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .progress-name { font-size: 12px; color: #C0CEDE; }
+  .progress-val { font-size: 12px; font-weight: 700; }
+  .progress-track { height: 6px; background: #0F1623; border-radius: 99px; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+
+  /* Buttons */
+  .btn-primary { width: 100%; padding: 16px; background: linear-gradient(135deg, #4F8EF7, #A259FF); border: none; border-radius: 14px; color: #fff; font-size: 16px; font-weight: 800; }
+  .btn-secondary { padding: 10px 24px; border-radius: 10px; border: none; color: #fff; font-weight: 700; font-size: 14px; }
+  .btn-ghost { background: transparent; border: 1px solid #2A3F5F; border-radius: 10px; color: #7B8FAE; padding: 10px 16px; font-size: 14px; }
+  .chip { padding: 8px 14px; border-radius: 20px; border: none; font-size: 13px; font-weight: 600; background: #0F1623; color: #7B8FAE; }
+  .chip.active { color: #fff; }
+
+  /* Log list */
+  .log-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #243347; }
+  .log-item:last-child { border-bottom: none; }
+  .log-icon-box { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .log-info { flex: 1; min-width: 0; }
+  .log-section { font-size: 12px; font-weight: 700; }
+  .log-note { font-size: 11px; color: #5A7090; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log-date { font-size: 10px; color: #3A5070; }
+  .log-min { font-size: 14px; font-weight: 800; color: #C0CEDE; flex-shrink: 0; }
+
+  /* Flashcard */
+  #flashcard { background: #1A2740; border-radius: 20px; padding: 40px 24px; margin-bottom: 20px; text-align: center; min-height: 220px; cursor: pointer; border: 2px solid #243347; transition: border 0.2s; position: relative; display: flex; flex-direction: column; justify-content: center; }
+  #flashcard.flipped { border-color: #4F8EF7; }
+  .card-hint { position: absolute; top: 14px; right: 16px; font-size: 11px; color: #3A5070; }
+  .card-lang { font-size: 11px; font-weight: 600; letter-spacing: 1px; margin-bottom: 16px; }
+  .card-word { font-size: 32px; font-weight: 900; margin-bottom: 12px; }
+  .card-example { font-size: 13px; color: #5A7090; font-style: italic; }
+
+  /* Chat */
+  #chat-messages { height: calc(100vh - 320px); min-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  .msg-wrap { display: flex; }
+  .msg-wrap.user { justify-content: flex-end; }
+  .msg-bubble { max-width: 80%; padding: 12px 16px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+  .msg-bubble.user { background: linear-gradient(135deg, #4F8EF7, #A259FF); border-radius: 16px 16px 4px 16px; }
+  .msg-bubble.ai { background: #1A2740; border-radius: 16px 16px 16px 4px; }
+
+  /* Bar chart */
+  #bar-chart { display: flex; gap: 6px; align-items: flex-end; height: 100px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar-val { font-size: 9px; color: #5A7090; }
+  .bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.3s; }
+  .bar-lbl { font-size: 9px; color: #5A7090; }
+
+  /* Timer */
+  #timer-display { font-size: 48px; font-weight: 900; letter-spacing: 4px; margin-bottom: 16px; text-align: center; color: #C0CEDE; transition: color 0.3s; }
+  #timer-display.running { color: #4F8EF7; }
+  .timer-btns { display: flex; gap: 10px; justify-content: center; }
+
+  /* Section filter chips */
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+
+  /* Reading */
+  #reading-text { font-size: 13px; color: #C0CEDE; line-height: 1.8; white-space: pre-wrap; }
+  .answer-reveal { margin-top: 6px; padding: 8px 12px; background: #1A3D2A; border-radius: 8px; border: 1px solid #2BC48A; font-size: 11px; color: #C0CEDE; display: none; }
+  .answer-reveal.show { display: block; }
+
+  /* Score inputs */
+  .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .score-input { width: 100%; background: #0F1623; border: 1px solid #243347; border-radius: 8px; color: #fff; padding: 8px 10px; font-size: 14px; }
+
+  /* Quick Q buttons */
+  .quick-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .quick-btn { padding: 6px 12px; border-radius: 20px; border: 1px solid #243347; background: #1A2740; color: #7B8FAE; font-size: 11px; font-weight: 600; }
+
+  /* Passage selector */
+  .passage-btns { display: flex; gap: 6px; }
+  .passage-btn { width: 28px; height: 28px; border-radius: 8px; border: none; color: #fff; font-size: 12px; font-weight: 700; background: #1A2740; }
+  .passage-btn.active { background: #4F8EF7; }
+
+  /* Empty state */
+  .empty { padding: 30px; text-align: center; color: #5A7090; font-size: 13px; line-height: 1.8; }
+
+  /* Install banner */
+  #install-banner { display: none; background: linear-gradient(135deg, #1A2740, #243347); border: 1px solid #4F8EF7; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
+  #install-banner.show { display: flex; align-items: center; gap: 12px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <div id="header-inner">
+    <div id="header-top">
+      <div>
+        <div id="app-label">TOEFL 100点への道</div>
+        <div id="app-title">Study Tracker</div>
+      </div>
+      <div id="streak-box">
+        <div id="streak-num">0🔥</div>
+        <div id="streak-label">連続学習日</div>
+      </div>
+    </div>
+    <nav id="nav">
+      <button class="nav-btn active" onclick="showPage('dashboard')">🏠 ホーム</button>
+      <button class="nav-btn" onclick="showPage('study')">📚 勉強</button>
+      <button class="nav-btn" onclick="showPage('vocab')">🔤 単語</button>
+      <button class="nav-btn" onclick="showPage('reading')">📖 読解</button>
+      <button class="nav-btn" onclick="showPage('log')">📊 記録</button>
+      <button class="nav-btn" onclick="showPage('advice')">🤖 AI相談</button>
+    </nav>
+  </div>
+</div>
+
+<div id="main">
+
+<!-- ======= DASHBOARD ======= -->
+<div id="page-dashboard" class="page active">
+  <div id="install-banner">
+    <span style="font-size:24px">📱</span>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700;color:#4F8EF7;margin-bottom:4px">ホーム画面に追加できます</div>
+      <div style="font-size:11px;color:#7B8FAE">Chrome右上メニュー →「ホーム画面に追加」をタップ</div>
+    </div>
+    <button onclick="document.getElementById('install-banner').classList.remove('show')" style="background:none;border:none;color:#5A7090;font-size:18px">✕</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-icon">⏱️</div>
+      <div class="stat-val" id="today-min" style="color:#4F8EF7">0分</div>
+      <div class="stat-lbl">今日の勉強</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">📅</div>
+      <div class="stat-val" id="week-min" style="color:#A259FF">0分</div>
+      <div class="stat-lbl">今週の合計</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">🏆</div>
+      <div class="stat-val" id="total-hours" style="color:#2BC48A">0時間</div>
+      <div class="stat-lbl">累計学習</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">目標スコア進捗</div>
+    <div id="score-progress"></div>
+    <div style="margin-top:14px;padding:10px 14px;background:#0F1623;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:#7B8FAE">合計スコア</span>
+      <span id="total-score" style="font-size:16px;font-weight:900;color:#F5A623">0 / 120点</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">今週の学習時間</div>
+    <div id="weekly-progress"></div>
+  </div>
+
+  <div class="card" id="today-log-card" style="display:none">
+    <div class="card-title">今日の学習ログ</div>
+    <div id="today-log-list"></div>
+  </div>
+
+  <button class="btn-primary" onclick="showPage('study')">📚 今日の勉強を始める</button>
+</div>
+
+<!-- ======= STUDY ======= -->
+<div id="page-study" class="page">
+  <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:20px">学習を記録する</div>
+
+  <div class="card" style="text-align:center">
+    <div id="timer-display">00:00</div>
+    <div class="timer-btns">
+      <button id="timer-toggle" class="btn-secondary" style="background:#4F8EF7" onclick="toggleTimer()">▶ スタート</button>
+      <button class="btn-ghost" onclick="resetTimer()">リセット</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sub-label">勉強したセクション</div>
+    <div id="section-chips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+
+  <div class="card" id="manual-time-card">
+    <div class="sub-label">勉強時間（分）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="time-chips"></div>
+  </div>
+
+  <div class="card">
+    <div class="sub-label">メモ（任意）</div>
+    <textarea id="study-note" placeholder="例：公式問題集P.32-45、リスニングが難しかった..." style="width:100%;background:#0F1623;border:1px solid #243347;border-radius:10px;color:#C0CEDE;padding:12px;font-size:13px;min-height:80px"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="sub-label">模擬試験スコアを更新（任意）</div>
+    <div class="score-grid" id="score-inputs"></div>
+  </div>
+
+  <button class="btn-primary" id="save-btn" onclick="saveStudyLog()" style="margin-top:4px">💾 学習を保存する</button>
+</div>
+
+<!-- ======= VOCAB ======= -->
+<div id="page-vocab" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="font-size:18px;font-weight:800;color:#fff">単語トレーニング</div>
+    <div style="background:#1A2740;padding:6px 14px;border-radius:20px;font-size:12px;color:#2BC48A;font-weight:700" id="mastered-count">習得: 0/15</div>
+  </div>
+
+  <div style="height:4px;background:#1A2740;border-radius:99px;margin-bottom:24px">
+    <div id="vocab-prog-bar" style="height:100%;background:#F5A623;border-radius:99px;width:0%;transition:width 0.3s"></div>
+  </div>
+
+  <div id="flashcard" onclick="flipCard()">
+    <div class="card-hint">タップで裏返す</div>
+    <div id="card-front">
+      <div class="card-lang" style="color:#7B8FAE">ENGLISH</div>
+      <div class="card-word" id="card-word" style="color:#fff"></div>
+      <div class="card-example" id="card-example"></div>
+    </div>
+    <div id="card-back" style="display:none">
+      <div class="card-lang" style="color:#F5A623">JAPANESE</div>
+      <div class="card-word" id="card-meaning" style="color:#F5A623"></div>
+      <div style="font-size:13px;color:#7B8FAE;margin-top:4px" id="card-word-back"></div>
+      <div style="font-size:12px;color:#4F8EF7;margin-top:12px;font-style:italic" id="card-example-back"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <button onclick="prevWord()" style="flex:1;padding:14px;background:#1A2740;border:1px solid #243347;border-radius:12px;color:#C0CEDE;font-weight:700;font-size:14px">← 前へ</button>
+    <button onclick="nextWord()" style="flex:1;padding:14px;background:#1A2740;border:1px solid #243347;border-radius:12px;color:#C0CEDE;font-weight:700;font-size:14px">次へ →</button>
+  </div>
+
+  <div id="answer-btns" style="display:none;gap:10px;display:none">
+    <button onclick="markVocab(false)" style="flex:1;padding:14px;background:#3D1A1A;border:1px solid #F76F4F;border-radius:12px;color:#F76F4F;font-weight:700;font-size:14px">❌ 知らなかった</button>
+    <button onclick="markVocab(true)" style="flex:1;padding:14px;background:#1A3D2A;border:1px solid #2BC48A;border-radius:12px;color:#2BC48A;font-weight:700;font-size:14px">✅ 知ってた！</button>
+  </div>
+
+  <div id="vocab-stat" style="margin-top:16px;background:#1A2740;border-radius:12px;padding:12px 16px;text-align:center;display:none">
+    <span style="font-size:12px;color:#7B8FAE">この単語の正答率: <strong id="vocab-accuracy" style="color:#4F8EF7"></strong></span>
+  </div>
+</div>
+
+<!-- ======= READING ======= -->
+<div id="page-reading" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="font-size:18px;font-weight:800;color:#fff">リーディング練習</div>
+    <div class="passage-btns" id="passage-btns"></div>
+  </div>
+
+  <div class="card">
+    <div id="reading-title" style="font-size:14px;font-weight:800;color:#4F8EF7;margin-bottom:12px"></div>
+    <div id="reading-text"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">設問</div>
+    <div id="reading-questions"></div>
+  </div>
+
+  <button id="show-answers-btn" onclick="toggleAnswers()" style="width:100%;padding:14px;background:#4F8EF7;border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px">解答を確認する</button>
+</div>
+
+<!-- ======= LOG ======= -->
+<div id="page-log" class="page">
+  <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:20px">学習記録</div>
+
+  <div class="card">
+    <div class="sub-label">直近7日間の学習時間</div>
+    <div id="bar-chart"></div>
+  </div>
+
+  <div class="card">
+    <div class="sub-label">セクション別合計</div>
+    <div id="section-totals" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+  </div>
+
+  <div class="filter-row" id="log-filter"></div>
+  <div class="card" id="log-list-card">
+    <div id="log-list"></div>
+  </div>
+</div>
+
+<!-- ======= AI ADVICE ======= -->
+<div id="page-advice" class="page">
+  <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:16px">🤖 AI学習コーチ</div>
+
+  <div class="card" style="display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;margin-bottom:16px">
+    <div style="font-size:11px;color:#7B8FAE">現在スコア: <strong id="ai-score" style="color:#F5A623">0/120</strong></div>
+    <div style="font-size:11px;color:#7B8FAE">連続: <strong id="ai-streak" style="color:#F5A623">0日🔥</strong></div>
+    <div style="font-size:11px;color:#7B8FAE">今週: <strong id="ai-weekly" style="color:#4F8EF7">0分</strong></div>
+  </div>
+
+  <div class="quick-row">
+    <button class="quick-btn" onclick="setInput('今週の勉強を振り返って')">今週の勉強を振り返って</button>
+    <button class="quick-btn" onclick="setInput('今日は何を勉強すべき？')">今日は何を勉強すべき？</button>
+    <button class="quick-btn" onclick="setInput('スコアを上げるコツは？')">スコアを上げるコツは？</button>
+    <button class="quick-btn" onclick="setInput('モチベが上がらない...')">モチベが上がらない...</button>
+  </div>
+
+  <div id="chat-messages"></div>
+
+  <div style="display:flex;gap:8px">
+    <input id="chat-input" placeholder="質問や相談を入力..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;background:#1A2740;border:1px solid #243347;border-radius:12px;color:#fff;padding:12px 16px;font-size:13px">
+    <button id="send-btn" onclick="sendChat()" style="padding:12px 20px;background:linear-gradient(135deg,#4F8EF7,#A259FF);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:14px">送信</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ============ DATA ============
+const SECTIONS = ["Reading","Listening","Speaking","Writing","単語"];
+const ICONS = {Reading:"📖",Listening:"🎧",Speaking:"🗣️",Writing:"✍️","単語":"🔤"};
+const COLORS = {Reading:"#4F8EF7",Listening:"#A259FF",Speaking:"#F76F4F",Writing:"#2BC48A","単語":"#F5A623"};
+const TARGETS = {Reading:27,Listening:27,Speaking:23,Writing:24};
+const WGOALS = {Reading:420,Listening:420,Speaking:300,Writing:300,"単語":420};
+
+const VOCAB = [
+  {word:"Phenomenon",meaning:"現象",example:"A natural phenomenon occurred."},
+  {word:"Hypothesis",meaning:"仮説",example:"The scientist proposed a hypothesis."},
+  {word:"Consequently",meaning:"その結果として",example:"Consequently, the plan failed."},
+  {word:"Abundant",meaning:"豊富な",example:"There are abundant resources here."},
+  {word:"Migrate",meaning:"移住する・移動する",example:"Birds migrate south in winter."},
+  {word:"Subsequent",meaning:"その後の・続く",example:"Subsequent events proved him right."},
+  {word:"Diminish",meaning:"減少する・弱める",example:"Her confidence began to diminish."},
+  {word:"Coherent",meaning:"一貫性のある",example:"Please give a coherent explanation."},
+  {word:"Ambiguous",meaning:"曖昧な",example:"The statement was ambiguous."},
+  {word:"Substantial",meaning:"かなりの・実質的な",example:"There was a substantial difference."},
+  {word:"Facilitate",meaning:"促進する・容易にする",example:"Technology can facilitate learning."},
+  {word:"Inevitable",meaning:"避けられない",example:"Change is inevitable."},
+  {word:"Controversy",meaning:"論争・議論",example:"The topic caused controversy."},
+  {word:"Primitive",meaning:"原始的な・初期の",example:"Primitive tools were used."},
+  {word:"Deteriorate",meaning:"悪化する",example:"His health began to deteriorate."},
+];
+
+const PASSAGES = [
+  {
+    title:"The Migration of Arctic Terns",
+    text:`The Arctic tern (Sterna paradisaea) holds the record for the longest known migration of any animal on Earth. Each year, these remarkable birds travel from their Arctic breeding grounds to the Antarctic and back again, covering a round-trip distance of approximately 70,000 kilometers. This extraordinary journey allows Arctic terns to experience more daylight than any other creature on the planet, as they follow summer from pole to pole.
+
+Recent tracking studies have revealed that Arctic terns do not fly in straight lines during their migration. Instead, they follow complex routes that take advantage of global wind patterns, particularly the Inter-Tropical Convergence Zone. By following these wind corridors, the birds can minimize energy expenditure while maximizing their travel speed. Researchers were surprised to discover that many terns make a figure-eight loop in the middle of the Atlantic Ocean to exploit particularly favorable wind patterns.
+
+The navigation abilities of Arctic terns are equally impressive. Scientists believe these birds use a combination of magnetic field detection, solar compasses, and star patterns to orient themselves during their journey. Young terns making their first migration appear to rely more heavily on magnetic cues, while experienced adults can adjust their routes based on wind conditions and food availability.`,
+    questions:[
+      {q:"Arctic ternの年間移動距離はおよそ何kmか？",a:"70,000km（往復）"},
+      {q:"なぜArctic ternは大西洋で8の字ルートを取るのか？",a:"有利な風のパターンを利用するため"},
+      {q:"若いternと経験豊富な成鳥の違いは？",a:"若鳥は磁気に頼り、成鳥は風や食料状況に合わせてルートを調整する"},
+    ]
+  },
+  {
+    title:"The Role of Sleep in Memory Consolidation",
+    text:`For decades, scientists believed that sleep was primarily a period of rest and recovery for the body. However, research over the past thirty years has dramatically changed our understanding of what happens in the brain during sleep. We now know that sleep plays a crucial role in memory consolidation, the process by which newly acquired information is transformed into long-term memories.
+
+During sleep, the brain cycles through several stages, including rapid eye movement (REM) sleep and non-REM sleep. Each stage appears to contribute differently to memory consolidation. Non-REM sleep, particularly the deep slow-wave sleep that predominates in the early part of the night, seems to be especially important for consolidating declarative memories, which include facts and events. REM sleep, which occurs more frequently toward morning, appears to be more involved in procedural memories, such as motor skills, and in emotional memory processing.
+
+The hippocampus, a seahorse-shaped structure deep in the brain, plays a central role in this process. During waking hours, the hippocampus rapidly encodes new experiences and information. During sleep, it replays these memories and gradually transfers them to the neocortex for long-term storage.`,
+    questions:[
+      {q:"Non-REM睡眠は主にどのタイプの記憶に重要か？",a:"宣言的記憶（事実や出来事）"},
+      {q:"海馬の役割を2つ述べよ",a:"①起きている間に新しい情報をエンコード ②睡眠中に記憶を再生し新皮質に転送する"},
+      {q:"睡眠不足が学習を妨げる理由は？",a:"海馬が新情報をエンコードする容量を解放できないため"},
+    ]
+  }
+];
+
+// ============ STORAGE ============
+const KEY = "toefl_v2";
+let appData = (() => {
+  try {
+    const s = localStorage.getItem(KEY);
+    return s ? JSON.parse(s) : null;
+  } catch { return null; }
+})() || {
+  logs: [],
+  scores: {Reading:0,Listening:0,Speaking:0,Writing:0},
+  vocabProgress: {},
+};
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(appData)); } catch {}
+}
+
+// ============ UTILS ============
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function calcStreak() {
+  const days = [...new Set(appData.logs.map(l=>l.date))].sort().reverse();
+  if (!days.length) return 0;
+  const today = todayStr();
+  const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if (days[0]!==today && days[0]!==yest) return 0;
+  let s=1;
+  for (let i=1;i<days.length;i++) {
+    const diff=(new Date(days[i-1])-new Date(days[i]))/86400000;
+    if(diff===1) s++; else break;
+  }
+  return s;
+}
+
+function weeklyMins() {
+  const weekAgo = new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  const r={};
+  SECTIONS.forEach(s=>r[s]=0);
+  appData.logs.filter(l=>l.date>=weekAgo).forEach(l=>r[l.section]=(r[l.section]||0)+l.minutes);
+  return r;
+}
+
+function fmtTime(s) {
+  return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+
+// ============ NAV ============
+let currentPage = "dashboard";
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("page-"+id).classList.add("active");
+  const btns = document.querySelectorAll(".nav-btn");
+  const order = ["dashboard","study","vocab","reading","log","advice"];
+  btns[order.indexOf(id)].classList.add("active");
+  currentPage = id;
+  if(id==="dashboard") renderDashboard();
+  if(id==="log") renderLog();
+  if(id==="advice") renderAdviceStats();
+}
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  const streak = calcStreak();
+  document.getElementById("streak-num").textContent = streak+"🔥";
+
+  const today = todayStr();
+  const todayLogs = appData.logs.filter(l=>l.date===today);
+  const todayMin = todayLogs.reduce((s,l)=>s+l.minutes,0);
+  const weekly = weeklyMins();
+  const weekMin = Object.values(weekly).reduce((a,b)=>a+b,0);
+  const totalMin = appData.logs.reduce((s,l)=>s+l.minutes,0);
+
+  document.getElementById("today-min").textContent = todayMin+"分";
+  document.getElementById("week-min").textContent = weekMin+"分";
+  document.getElementById("total-hours").textContent = Math.floor(totalMin/60)+"時間";
+
+  // Score progress
+  let scoreHTML="";
+  Object.entries(TARGETS).forEach(([s,max])=>{
+    const cur = appData.scores[s]||0;
+    const pct = Math.min(100,Math.round(cur/max*100));
+    scoreHTML+=`<div class="progress-row">
+      <div class="progress-header">
+        <span class="progress-name">${ICONS[s]} ${s}</span>
+        <span class="progress-val" style="color:${COLORS[s]}">${cur} / ${max}点</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${COLORS[s]}"></div></div>
+    </div>`;
+  });
+  document.getElementById("score-progress").innerHTML = scoreHTML;
+  const total = Object.values(appData.scores).reduce((a,b)=>a+b,0);
+  document.getElementById("total-score").textContent = total+" / 120点";
+
+  // Weekly progress
+  let wHTML="";
+  SECTIONS.forEach(s=>{
+    const min = weekly[s]||0;
+    const goal = WGOALS[s];
+    const pct = Math.min(100,Math.round(min/goal*100));
+    wHTML+=`<div class="progress-row">
+      <div class="progress-header">
+        <span class="progress-name">${ICONS[s]} ${s}</span>
+        <span class="progress-val" style="color:${COLORS[s]}">${min}分 / ${goal}分</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${COLORS[s]}"></div></div>
+    </div>`;
+  });
+  document.getElementById("weekly-progress").innerHTML = wHTML;
+
+  // Today log
+  const card = document.getElementById("today-log-card");
+  if (todayLogs.length>0) {
+    card.style.display="block";
+    document.getElementById("today-log-list").innerHTML = todayLogs.map((l,i)=>`
+      <div class="log-item">
+        <div class="log-icon-box" style="background:${COLORS[l.section]}22">${ICONS[l.section]}</div>
+        <div class="log-info">
+          <div class="log-section" style="color:${COLORS[l.section]}">${l.section}</div>
+          ${l.note?`<div class="log-note">${l.note}</div>`:""}
+        </div>
+        <div class="log-min">${l.minutes}分</div>
+      </div>`).join("");
+  } else { card.style.display="none"; }
+}
+
+// ============ TIMER ============
+let timerSec=0, timerInterval=null;
+function toggleTimer() {
+  if(timerInterval) {
+    clearInterval(timerInterval); timerInterval=null;
+    document.getElementById("timer-toggle").textContent="▶ スタート";
+    document.getElementById("timer-toggle").style.background="#4F8EF7";
+    document.getElementById("timer-display").classList.remove("running");
+  } else {
+    timerInterval = setInterval(()=>{
+      timerSec++;
+      document.getElementById("timer-display").textContent = fmtTime(timerSec);
+    },1000);
+    document.getElementById("timer-toggle").textContent="⏸ 一時停止";
+    document.getElementById("timer-toggle").style.background="#F76F4F";
+    document.getElementById("timer-display").classList.add("running");
+    document.getElementById("manual-time-card").style.display="none";
+  }
+}
+function resetTimer() {
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  timerSec=0;
+  document.getElementById("timer-display").textContent="00:00";
+  document.getElementById("timer-display").classList.remove("running");
+  document.getElementById("timer-toggle").textContent="▶ スタート";
+  document.getElementById("timer-toggle").style.background="#4F8EF7";
+  document.getElementById("manual-time-card").style.display="block";
+}
+
+// ============ STUDY PAGE ============
+let selectedSection = "Reading";
+let selectedMinutes = 30;
+
+function initStudyPage() {
+  // Section chips
+  const sc = document.getElementById("section-chips");
+  sc.innerHTML = SECTIONS.map(s=>`
+    <button class="chip ${s===selectedSection?"active":""}" 
+      style="${s===selectedSection?"background:"+COLORS[s]+";":""}color:${s===selectedSection?"#fff":"#7B8FAE"}"
+      onclick="selectSection('${s}')">${ICONS[s]} ${s}</button>`).join("");
+
+  // Time chips
+  const tc = document.getElementById("time-chips");
+  tc.innerHTML = [15,30,45,60,90,120].map(m=>`
+    <button class="chip ${m===selectedMinutes?"active":""}" 
+      style="${m===selectedMinutes?"background:#4F8EF7;color:#fff":""}"
+      onclick="selectMinutes(${m})">${m}分</button>`).join("");
+
+  // Score inputs
+  const si = document.getElementById("score-inputs");
+  si.innerHTML = Object.entries(TARGETS).map(([s,max])=>`
+    <div>
+      <div style="font-size:11px;color:${COLORS[s]};margin-bottom:4px;font-weight:600">${ICONS[s]} ${s} / ${max}</div>
+      <input type="number" class="score-input" min="0" max="${max}" value="${appData.scores[s]||0}"
+        onchange="appData.scores['${s}']=Math.min(${max},Math.max(0,+this.value));save()">
+    </div>`).join("");
+}
+
+function selectSection(s) {
+  selectedSection=s;
+  document.querySelectorAll("#section-chips .chip").forEach((b,i)=>{
+    const sec=SECTIONS[i];
+    b.className="chip"+(sec===s?" active":"");
+    b.style.background=sec===s?COLORS[sec]:"";
+    b.style.color=sec===s?"#fff":"#7B8FAE";
+  });
+}
+
+function selectMinutes(m) {
+  selectedMinutes=m;
+  document.querySelectorAll("#time-chips .chip").forEach((b,i)=>{
+    const mins=[15,30,45,60,90,120][i];
+    b.className="chip"+(mins===m?" active":"");
+    b.style.background=mins===m?"#4F8EF7":"";
+    b.style.color=mins===m?"#fff":"#7B8FAE";
+  });
+}
+
+function saveStudyLog() {
+  const mins = timerSec>0 ? Math.max(1,Math.ceil(timerSec/60)) : selectedMinutes;
+  const note = document.getElementById("study-note").value.trim();
+  appData.logs.push({date:todayStr(),section:selectedSection,minutes:mins,note});
+  save();
+  const btn = document.getElementById("save-btn");
+  btn.textContent="✅ 記録しました！";
+  btn.style.background="#2BC48A";
+  document.getElementById("study-note").value="";
+  resetTimer();
+  setTimeout(()=>{btn.textContent="💾 学習を保存する";btn.style.background="";btn.style.backgroundImage="linear-gradient(135deg,#4F8EF7,#A259FF)";},2000);
+}
+
+// ============ VOCAB ============
+let vocabIdx=0, vocabFlipped=false;
+
+function renderVocab() {
+  const w = VOCAB[vocabIdx];
+  document.getElementById("card-word").textContent=w.word;
+  document.getElementById("card-example").textContent='"'+w.example+'"';
+  document.getElementById("card-meaning").textContent=w.meaning;
+  document.getElementById("card-word-back").textContent=w.word;
+  document.getElementById("card-example-back").textContent='"'+w.example+'"';
+
+  const pct = Math.round((vocabIdx/VOCAB.length)*100);
+  document.getElementById("vocab-prog-bar").style.width=pct+"%";
+
+  const p = appData.vocabProgress[w.word];
+  const mastStat = document.getElementById("vocab-stat");
+  if(p && p.total>0) {
+    mastStat.style.display="block";
+    document.getElementById("vocab-accuracy").textContent=Math.round(p.correct/p.total*100)+"% ("+p.correct+"/"+p.total+"回)";
+  } else { mastStat.style.display="none"; }
+
+  const mastered = VOCAB.filter(v=>{const vp=appData.vocabProgress[v.word];return vp&&vp.total>=3&&vp.correct/vp.total>=0.8;}).length;
+  document.getElementById("mastered-count").textContent="習得: "+mastered+"/"+VOCAB.length;
+
+  unflip();
+}
+
+function flipCard() {
+  vocabFlipped=!vocabFlipped;
+  document.getElementById("card-front").style.display=vocabFlipped?"none":"block";
+  document.getElementById("card-back").style.display=vocabFlipped?"block":"none";
+  document.getElementById("flashcard").classList.toggle("flipped",vocabFlipped);
+  const ab = document.getElementById("answer-btns");
+  ab.style.display=vocabFlipped?"flex":"none";
+}
+
+function unflip() {
+  vocabFlipped=false;
+  document.getElementById("card-front").style.display="block";
+  document.getElementById("card-back").style.display="none";
+  document.getElementById("flashcard").classList.remove("flipped");
+  document.getElementById("answer-btns").style.display="none";
+}
+
+function nextWord() { vocabIdx=(vocabIdx+1)%VOCAB.length; renderVocab(); }
+function prevWord() { vocabIdx=(vocabIdx-1+VOCAB.length)%VOCAB.length; renderVocab(); }
+
+function markVocab(correct) {
+  const key=VOCAB[vocabIdx].word;
+  const cur=appData.vocabProgress[key]||{correct:0,total:0};
+  appData.vocabProgress[key]={correct:cur.correct+(correct?1:0),total:cur.total+1};
+  save();
+  unflip();
+  setTimeout(()=>{vocabIdx=(vocabIdx+1)%VOCAB.length;renderVocab();},300);
+}
+
+// ============ READING ============
+let passageIdx=0, showingAnswers=false;
+
+function renderReading() {
+  const p = PASSAGES[passageIdx];
+  document.getElementById("reading-title").textContent=p.title;
+  document.getElementById("reading-text").textContent=p.text;
+  showingAnswers=false;
+  document.getElementById("show-answers-btn").textContent="解答を確認する";
+  document.getElementById("show-answers-btn").style.background="#4F8EF7";
+
+  const pb = document.getElementById("passage-btns");
+  pb.innerHTML = PASSAGES.map((_,i)=>`<button class="passage-btn ${i===passageIdx?"active":""}" onclick="selectPassage(${i})">${i+1}</button>`).join("");
+
+  const qEl = document.getElementById("reading-questions");
+  qEl.innerHTML = p.questions.map((q,i)=>`
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;color:#C0CEDE;margin-bottom:8px"><strong style="color:#F5A623">Q${i+1}.</strong> ${q.q}</div>
+      <textarea placeholder="ここに答えを書いてください..." style="width:100%;background:#0F1623;border:1px solid #243347;border-radius:8px;color:#C0CEDE;padding:10px;font-size:12px;min-height:60px"></textarea>
+      <div class="answer-reveal" id="ans-${i}"><span style="color:#2BC48A;font-weight:700">✅ 解答例: </span>${q.a}</div>
+    </div>`).join("");
+}
+
+function selectPassage(i) { passageIdx=i; renderReading(); }
+
+function toggleAnswers() {
+  showingAnswers=!showingAnswers;
+  PASSAGES[passageIdx].questions.forEach((_,i)=>{
+    const el=document.getElementById("ans-"+i);
+    if(el) el.classList.toggle("show",showingAnswers);
+  });
+  const btn=document.getElementById("show-answers-btn");
+  btn.textContent=showingAnswers?"解答を隠す":"解答を確認する";
+  btn.style.background=showingAnswers?"#243347":"#4F8EF7";
+}
+
+// ============ LOG ============
+let logFilter="all";
+
+function renderLog() {
+  // Bar chart
+  const last7=Array.from({length:7},(_,i)=>{
+    const d=new Date(Date.now()-i*86400000);
+    const str=d.toISOString().slice(0,10);
+    const mins=appData.logs.filter(l=>l.date===str).reduce((s,l)=>s+l.minutes,0);
+    return {date:str,label:`${d.getMonth()+1}/${d.getDate()}`,mins};
+  }).reverse();
+  const maxM=Math.max(...last7.map(d=>d.mins),60);
+  const today=todayStr();
+  document.getElementById("bar-chart").innerHTML=last7.map(d=>`
+    <div class="bar-col">
+      <div class="bar-val">${d.mins>0?d.mins+"m":""}</div>
+      <div class="bar-fill" style="height:${Math.max(4,d.mins/maxM*80)}px;background:${d.date===today?"#4F8EF7":"#2A3F5F"}"></div>
+      <div class="bar-lbl">${d.label}</div>
+    </div>`).join("");
+
+  // Section totals
+  document.getElementById("section-totals").innerHTML=SECTIONS.map(s=>{
+    const min=appData.logs.filter(l=>l.section===s).reduce((a,b)=>a+b.minutes,0);
+    return `<div style="background:#0F1623;border-radius:10px;padding:10px 14px">
+      <div style="font-size:11px;color:${COLORS[s]};font-weight:700">${ICONS[s]} ${s}</div>
+      <div style="font-size:18px;font-weight:900;color:#fff">${min}<span style="font-size:11px;color:#5A7090">分</span></div>
+    </div>`;
+  }).join("");
+
+  // Filter
+  document.getElementById("log-filter").innerHTML=["all",...SECTIONS].map(s=>`
+    <button onclick="setLogFilter('${s}')" style="padding:6px 12px;border-radius:20px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${logFilter===s?(s==="all"?"#4F8EF7":COLORS[s]):"#1A2740"};color:${logFilter===s?"#fff":"#7B8FAE"}">${s==="all"?"全て":ICONS[s]+" "+s}</button>`).join("");
+
+  // List
+  const filtered=logFilter==="all"?appData.logs:appData.logs.filter(l=>l.section===logFilter);
+  const sorted=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById("log-list").innerHTML=sorted.length===0?
+    `<div class="empty">まだ記録がありません。<br>勉強タブから学習を記録しましょう！</div>`:
+    sorted.slice(0,30).map((l,i)=>`
+      <div class="log-item" style="${i===sorted.slice(0,30).length-1?"border:none":""}">
+        <div class="log-icon-box" style="background:${COLORS[l.section]}22">${ICONS[l.section]}</div>
+        <div class="log-info">
+          <div class="log-section" style="color:${COLORS[l.section]}">${l.section}</div>
+          ${l.note?`<div class="log-note">${l.note}</div>`:""}
+          <div class="log-date">${l.date}</div>
+        </div>
+        <div class="log-min">${l.minutes}分</div>
+      </div>`).join("");
+}
+
+function setLogFilter(f) { logFilter=f; renderLog(); }
+
+// ============ AI CHAT ============
+let chatMsgs=[{role:"assistant",content:"こんにちは！TOEFL 100点を目指してサポートします🎯\n勉強の悩みや質問があれば何でも聞いてください。学習データも見ながらアドバイスします！"}];
+
+function renderAdviceStats() {
+  const total=Object.values(appData.scores).reduce((a,b)=>a+b,0);
+  const streak=calcStreak();
+  const weekly=weeklyMins();
+  const weekTotal=Object.values(weekly).reduce((a,b)=>a+b,0);
+  document.getElementById("ai-score").textContent=total+"/120";
+  document.getElementById("ai-streak").textContent=streak+"日🔥";
+  document.getElementById("ai-weekly").textContent=weekTotal+"分";
+  renderChatMessages();
+}
+
+function renderChatMessages() {
+  const el=document.getElementById("chat-messages");
+  el.innerHTML=chatMsgs.map(m=>`
+    <div class="msg-wrap ${m.role==="user"?"user":""}">
+      <div class="msg-bubble ${m.role==="user"?"user":"ai"}">${m.content.replace(/\n/g,"<br>")}</div>
+    </div>`).join("");
+  el.scrollTop=el.scrollHeight;
+}
+
+function setInput(text) { document.getElementById("chat-input").value=text; }
+
+async function sendChat() {
+  const input=document.getElementById("chat-input").value.trim();
+  if(!input) return;
+  chatMsgs.push({role:"user",content:input});
+  document.getElementById("chat-input").value="";
+  document.getElementById("send-btn").disabled=true;
+  chatMsgs.push({role:"assistant",content:"考え中...✨"});
+  renderChatMessages();
+
+  const weekly=weeklyMins();
+  const streak=calcStreak();
+  const total=Object.values(appData.scores).reduce((a,b)=>a+b,0);
+  const system=`あなたはTOEFL 100点を目指す筑波大学2年生の日本人学生のパーソナル英語コーチです。
+
+現在の学習データ:
+- 連続学習日数: ${streak}日
+- 現在の推定スコア: ${total}/120点 (Reading:${appData.scores.Reading}, Listening:${appData.scores.Listening}, Speaking:${appData.scores.Speaking}, Writing:${appData.scores.Writing})
+- 今週の学習時間: Reading ${weekly.Reading}分, Listening ${weekly.Listening}分, Speaking ${weekly.Speaking}分, Writing ${weekly.Writing}分, 単語 ${weekly["単語"]}分
+- 総学習記録数: ${appData.logs.length}件
+
+目標: 2年生前期中にTOEFL 100点取得（2年後期に留学出願のため）
+日本語で丁寧に、具体的かつ実践的なアドバイスをしてください。200文字以内でコンパクトにまとめてください。`;
+
+  try {
+    const apiMsgs=chatMsgs.slice(0,-1).map(m=>({role:m.role,content:m.content}));
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system,messages:apiMsgs})
+    });
+    const data=await res.json();
+    const reply=data.content?.map(b=>b.text||"").join("")||"エラーが発生しました。";
+    chatMsgs[chatMsgs.length-1]={role:"assistant",content:reply};
+  } catch {
+    chatMsgs[chatMsgs.length-1]={role:"assistant",content:"エラーが発生しました。もう一度お試しください。"};
+  }
+  document.getElementById("send-btn").disabled=false;
+  renderChatMessages();
+}
+
+// ============ INIT ============
+window.addEventListener("DOMContentLoaded", ()=>{
+  initStudyPage();
+  renderVocab();
+  renderReading();
+  renderDashboard();
+
+  // Show install banner if not standalone
+  if(!window.matchMedia("(display-mode: standalone)").matches && !navigator.standalone) {
+    setTimeout(()=>document.getElementById("install-banner").classList.add("show"), 1000);
+  }
+});
+</script>
+</body>
+</html>
